@@ -2715,6 +2715,13 @@ static int gtp_set_cur_value(int gtp_mode, int gtp_value)
 	struct goodix_ts_device *dev = goodix_core_data->ts_dev;
 
 	ts_info("mode:%d, value:%d", gtp_mode, gtp_value);
+
+	if (gtp_mode == Touch_Doubletap_Mode && goodix_core_data && gtp_value >= 0) {
+		goodix_core_data->double_wakeup = gtp_value;
+		goodix_core_data->gesture_enabled = goodix_core_data->double_wakeup | goodix_core_data->aod_status;
+		return 0;
+	}
+
 	if (gtp_mode == Touch_Fod_Enable && goodix_core_data) {
 		mutex_lock(&goodix_core_data->work_stat);
 		ts_info("locked work_stat mutex");
