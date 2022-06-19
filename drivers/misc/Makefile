@@ -103,3 +103,6 @@ obj-$(CONFIG_LDO_WL2866D)     += wl2866d.o
 obj-$(CONFIG_GPIO_TESTING_MODE)     += gpio-testing-mode.o
 
 obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
+
+obj-$(CONFIG_KPROFILES) += kprofiles/
+
