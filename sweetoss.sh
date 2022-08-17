@@ -153,7 +153,7 @@ End=$(date +"%s")
 Diff=$(($End - $Start))
 }
 
-export IMG="$MY_DIR"/out/arch/arm64/boot/Image
+export IMG="$MY_DIR"/out/arch/arm64/boot/Image.gz-dtb
 export dtbo="$MY_DIR"/out/arch/arm64/boot/dtbo.img
 export dtb="$MY_DIR"/out/arch/arm64/boot/dtb.img
 
@@ -201,7 +201,6 @@ KERVER=$(make kernelversion)
                 cp -r "$dtbo" zip/
                 cp -r "$dtb" zip/
                 cd zip
-                mv Image zImage
                 export ZIP="$KERNEL_NAME"-"$KRNL_REL_TAG"-"$CODENAME"-"$DATE"
                 zip -r9 "$ZIP" * -x .git README.md LICENSE *placeholder
                 curl -sLo zipsigner-3.0.jar https://raw.githubusercontent.com/shashank1439/anykernel/zipper/zipsigner-3.0.jar
