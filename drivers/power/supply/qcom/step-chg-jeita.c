@@ -834,7 +834,7 @@ static int handle_jeita(struct step_chg_info *chip)
 
 	temp = pval.intval;
 	/* should disable/enable cp(smb1390) when soft jeita trigger and clear */
-	if (chip->six_pin_battery && !chip->use_bq_pump) {
+	if (chip->six_pin_battery && !chip->use_bq_pump && is_bq25970_available(chip)) {
 		if (!chip->cp_disable_votable)
 			chip->cp_disable_votable = find_votable("CP_DISABLE");
 
