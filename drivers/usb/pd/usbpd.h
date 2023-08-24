@@ -136,11 +136,13 @@ enum uvdm_state {
 	USBPD_UVDM_REMOVE_COMPENSATION,
 	USBPD_UVDM_CONNECT,
 	USBPD_UVDM_NAN_ACK,
+	USBPD_UVDM_SINK_CAPACITY,
 };
 
 #define USB_PD_MI_SVID			0x2717
 #define USBPD_UVDM_SS_LEN		4
 #define USBPD_UVDM_VERIFIED_LEN		1
+#define USBPD_UVDM_CAPACITY_LEN		1
 
 #define VDM_HDR(svid, cmd0, cmd1) \
        (((svid) << 16) | (0 << 15) | ((cmd0) << 8) \
@@ -161,6 +163,9 @@ struct usbpd_vdm_data {
 
 #define USBPD_WEAK_PPS_POWER		18000000
 #define USBPD_WAKK_PPS_CURR_LIMIT	1500000
+#define USBPD_MIPHONE_POWER		(5000 * 1500)
 
+#define USBPD_SEND_CAPACITY_DELAY	1300
+#define USBPD_SWAP_INTERCHG_DELAY	400
 
 #endif /* _USBPD_H */
