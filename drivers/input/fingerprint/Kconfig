@@ -19,5 +19,6 @@ source "drivers/input/fingerprint/goodix_ta/Kconfig"
 source "drivers/input/fingerprint/fpc1020/Kconfig"
 source "drivers/input/fingerprint/fs_tee/Kconfig"
 source "drivers/input/fingerprint/gf3208/Kconfig"
+source "drivers/input/fingerprint/fpc_1540/Kconfig"
 
 endif
