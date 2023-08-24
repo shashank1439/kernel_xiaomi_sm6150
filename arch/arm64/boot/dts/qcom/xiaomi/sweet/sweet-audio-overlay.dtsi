@@ -110,45 +110,25 @@
 	status = "ok";
 
 	/* TOP Smart PA */
-	aw882xx_smartpa@34 {
-		compatible = "awinic,aw882xx_smartpa";
-		reg = <0x34>;
-		reset-gpio = <&tlmm 64 0>;
-		irq-gpio = <&tlmm 93 0>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <93 0>;
-		interrupt-names = "smartpa_irq";
-		pinctrl-names = "default", "sleep";
-		pinctrl-0 = <&top_smartpa_int_active>;
-		pinctrl-1 = <&top_smartpa_int_suspend>;
-		monitor-flag = <1>;
-		aw-cali-mode = "aw_class";
-		sound-channel = <0>;
-		status = "ok";
-	};
+        fs1815@34 {
+                compatible = "foursemi,fs16xx";
+                fsm,rst-gpio = <&tlmm 64 0>;
+                reg = <0x34>;
+                status = "okay";
+        };
 
 	/* BOT Smart PA */
-	aw882xx_smartpa@35 {
-		compatible = "awinic,aw882xx_smartpa";
-		reg = <0x35>;
-		reset-gpio = <&tlmm 72 0>;
-		irq-gpio = <&tlmm 56 0>;
-		interrupt-parent = <&tlmm>;
-		interrupts = <56 0>;
-		interrupt-names = "smartpa_irq";
-		pinctrl-names = "default", "sleep";
-		pinctrl-0 = <&bot_smartpa_int_active>;
-		pinctrl-1 = <&bot_smartpa_int_suspend>;
-		monitor-flag = <1>;
-		aw-cali-mode = "aw_class";
-		sound-channel = <1>;
-		status = "ok";
-	};
+        fs1815@35 {
+                compatible = "foursemi,fs16xx";
+                fsm,rst-gpio = <&tlmm 72 0>;
+                reg = <0x35>;
+                status = "okay";
+        };
 };
 
 &wcd937x_codec {
 	compatible = "qcom,wcd937x-codec";
-	qcom,cdc-micbias1-mv = <2750>;
-	qcom,cdc-micbias2-mv = <2750>;
-	qcom,cdc-micbias3-mv = <2750>;
+	qcom,cdc-micbias1-mv = <2400>;
+	qcom,cdc-micbias2-mv = <2400>;
+	qcom,cdc-micbias3-mv = <2400>;
 };
