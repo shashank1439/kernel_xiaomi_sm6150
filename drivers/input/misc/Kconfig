@@ -14,6 +14,7 @@ if INPUT_MISC
 
 source "drivers/input/misc/aw8624_haptic/Kconfig"
 source "drivers/input/misc/drv2624_haptic/Kconfig"
+source "drivers/input/misc/aw862xx_haptic/Kconfig"
 
 config INPUT_88PM860X_ONKEY
 	tristate "88PM860x ONKEY support"
