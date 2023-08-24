@@ -178,13 +178,6 @@
 				label = "v_i_int_vbat_vdata";
 				qcom,pre-scaling = <1 1>;
 			};
-
-			v_i_parallel {
-				reg = <ADC_PARALLEL_ISENSE_VBAT_VDATA>;
-				label = "v_i_parallel_vbat_vdata";
-				qcom,pre-scaling = <1 1>;
-			};
-
 		};
 
 		pm6150_adc_tm: adc_tm@3500 {

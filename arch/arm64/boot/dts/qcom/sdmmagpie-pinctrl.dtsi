@@ -108,7 +108,7 @@
 				config {
 					pins = "gpio49", "gpio50", "gpio51",
 								"gpio52";
-					drive-strength = <6>;
+					drive-strength = <12>;
 					bias-disable;
 				};
 			};
@@ -154,6 +154,7 @@
 					pins = "gpio0", "gpio1";
 					drive-strength = <2>;
 					bias-pull-up;
+					output-high;
 				};
 			};
 		};
