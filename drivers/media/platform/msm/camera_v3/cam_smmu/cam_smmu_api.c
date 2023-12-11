@@ -381,7 +381,7 @@ static uint32_t cam_smmu_find_closest_mapping(int idx, void *vaddr)
 	list_for_each_entry(mapping,
 			&iommu_cb_set.cb_info[idx].smmu_buf_list, list) {
 		start_addr = (unsigned long)mapping->paddr;
-		end_addr = (unsigned long)mapping->paddr + mapping->len;
+		end_addr = (unsigned long)mapping->paddr + mapping->len - 1;
 
 		if (start_addr <= current_addr && current_addr <= end_addr) {
 			closest_mapping = mapping;

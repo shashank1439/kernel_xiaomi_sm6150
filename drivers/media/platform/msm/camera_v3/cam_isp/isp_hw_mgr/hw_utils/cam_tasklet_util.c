@@ -20,7 +20,7 @@
 #include "cam_irq_controller.h"
 #include "cam_debug_util.h"
 
-#define CAM_TASKLETQ_SIZE              256
+#define CAM_TASKLETQ_SIZE              512
 
 static void cam_tasklet_action(unsigned long data);
 
