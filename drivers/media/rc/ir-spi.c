@@ -274,7 +274,11 @@ static int ir_spi_remove(struct spi_device *spi)
 }
 
 static const struct of_device_id ir_spi_of_match[] = {
+#ifdef CONFIG_MACH_XIAOMI_SWEETK6A
+	{ .compatible = "qcom,spi-msm-ir" },
+else
 	{ .compatible = "ir-spi" },
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, ir_spi_of_match);
