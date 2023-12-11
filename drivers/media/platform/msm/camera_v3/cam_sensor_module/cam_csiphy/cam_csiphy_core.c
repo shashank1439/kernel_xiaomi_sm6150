@@ -562,7 +562,7 @@ int32_t cam_csiphy_config_dev(struct csiphy_device *csiphy_dev)
 		lane_pos++;
 	}
 	if (csiphy_dev->csiphy_info.csiphy_3phase)
-		cam_csiphy_config_cdr(csiphy_dev);
+		cam_csiphy_cphy_data_rate_config(csiphy_dev);
 
 	cam_csiphy_cphy_irq_config(csiphy_dev);
 

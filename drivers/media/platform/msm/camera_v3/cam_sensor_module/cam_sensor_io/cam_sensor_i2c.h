@@ -27,7 +27,11 @@
 #define I2C_COMPARE_MATCH 0
 #define I2C_COMPARE_MISMATCH 1
 
+#ifdef __XIAOMI_CAMERA__
+#define I2C_REG_DATA_MAX       8542
+#else
 #define I2C_REG_DATA_MAX       (8*1024)
+#endif
 
 /**
  * @client: CCI client structure

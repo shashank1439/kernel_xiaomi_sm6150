@@ -6,6 +6,8 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+subdir-ccflags-y += -D__XIAOMI_CAMERA__
+
 obj-y				+= irqchip/
 obj-y				+= bus/
 
