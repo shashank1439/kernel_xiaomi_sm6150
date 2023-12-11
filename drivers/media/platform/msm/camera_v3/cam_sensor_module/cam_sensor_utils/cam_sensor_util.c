@@ -26,6 +26,9 @@ extern int wl2866d_camera_power_down(int out_iotype);
 #define DELAY_SETP 1000
 
 #endif
+#if (defined CONFIG_LEDS_QPNP_VIBRATOR_LDO) && (defined __XIAOMI_CAMERA__)
+extern int qpnp_vibrator_ldo_power(bool enable);
+#endif
 
 
 #define VALIDATE_VOLTAGE(min, max, config_val) ((config_val) && \
@@ -1819,6 +1822,11 @@ int cam_sensor_core_power_up(struct cam_sensor_power_ctrl_t *ctrl,
 			CAM_INFO(CAM_SENSOR,"wl2866d_iotype = [%d], wl2866_time_delay is [%d]", power_setting->seq_type, wl2866_time_delay);
 			break;
 #endif
+#if (defined CONFIG_LEDS_QPNP_VIBRATOR_LDO) && (defined __XIAOMI_CAMERA__)
+		case SENSOR_PM6150_VIB:
+			qpnp_vibrator_ldo_power(true);
+			break;
+#endif
 		default:
 			CAM_ERR(CAM_SENSOR, "error power seq type %d",
 				power_setting->seq_type);
@@ -2130,7 +2138,11 @@ int cam_sensor_util_power_down(struct cam_sensor_power_ctrl_t *ctrl,
 			CAM_INFO(CAM_SENSOR,"wl2866d_iotype = [%d], wl2866_time_delay is [%d]", pd->seq_type, wl2866_time_delay);
 			break;
 #endif
-
+#if (defined CONFIG_LEDS_QPNP_VIBRATOR_LDO) && (defined __XIAOMI_CAMERA__)
+		case SENSOR_PM6150_VIB:
+			qpnp_vibrator_ldo_power(false);
+			break;
+#endif
 		default:
 			CAM_ERR(CAM_SENSOR, "error power seq type %d",
 				pd->seq_type);

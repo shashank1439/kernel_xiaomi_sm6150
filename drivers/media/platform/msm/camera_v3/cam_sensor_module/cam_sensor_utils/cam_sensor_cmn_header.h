@@ -159,6 +159,9 @@ enum msm_camera_power_seq_type {
 	SENSOR_WL2866D_AVDD1,
 	SENSOR_WL2866D_AVDD2,
 #endif
+#if (defined CONFIG_LEDS_QPNP_VIBRATOR_LDO) && (defined __XIAOMI_CAMERA__)
+	SENSOR_PM6150_VIB,
+#endif
 	SENSOR_SEQ_TYPE_MAX,
 };
 
