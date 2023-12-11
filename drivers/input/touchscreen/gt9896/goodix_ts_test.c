@@ -47,7 +47,7 @@
 #define TOTAL_FRAME_NUM					16
 #define GTX8_RETRY_NUM_3				3
 #define GTX8_CONFIG_REFRESH_DATA		0x01
-#define GTX8_TEST_FILE_NAME				"test_limits"
+#define GTX8_TEST_FILE_NAME				"k6a_test_limits"
 /*#define GTX8_RESULT_SAVE_PATH			"/sdcard/"*/
 #define GTX8_RESULT_SAVE_PATH			"/data/misc/tp_selftest_data/"
 
@@ -1182,7 +1182,7 @@ int parse_csvfile(struct goodix_ts_device *ts_dev, char *target_name, int32_t  *
 		goto exit_free;
 	}
 
-	buf = (char *)kzalloc(firmware->size + 1, GFP_KERNEL);
+	buf = (char *)vzalloc(firmware->size + 1);
 	if (NULL == buf) {
 		ts_err("%s: kzalloc %zu bytes failed.\n", __func__, firmware->size);
 		ret = -ESRCH;
@@ -1225,8 +1225,8 @@ int parse_csvfile(struct goodix_ts_device *ts_dev, char *target_name, int32_t  *
 exit_free:
 	ts_info("%s exit free\n", __func__);
 	if (buf) {
-		ts_info("kfree buf\n");
-		kfree(buf);
+		ts_info("vfree buf\n");
+		vfree(buf);
 		buf = NULL;
 	}
 
@@ -1823,6 +1823,7 @@ static int gtx8_cache_origconfig(struct gtx8_ts_test *ts_test)
 static int gtx8_tptest_prepare(struct gtx8_ts_test *ts_test)
 {
 	int ret = 0;
+	int retry = 3;
 	struct goodix_ts_core *core_data;
 	core_data = (struct goodix_ts_core *)ts_test->ts;
 
@@ -1866,13 +1867,16 @@ static int gtx8_tptest_prepare(struct gtx8_ts_test *ts_test)
 	}
 #if ((defined NOISE_DATA_TEST) || (defined SELFNOISE_DATA_TEST))
 	if (core_data->ts_dev->hw_ops->send_config) {
-		ret = core_data->ts_dev->hw_ops->send_config(core_data->ts_dev,
-			ts_test->noise_config);
-		if (ret) {
-			ts_err("Failed to send noise test config config:%d\n", ret);
-			return ret;
+		while(retry--) {
+			ret = core_data->ts_dev->hw_ops->send_config(core_data->ts_dev,
+				ts_test->noise_config);
+			if (ret) {
+				ts_err("Failed to send noise test config config:%d,retry:%d\n", ret, retry);
+			} else {
+				ts_info("send noise test config success :%d retry: %d\n", ret, retry);
+				break;
+			}
 		}
-		ts_info("send noise test config success :%d\n", ret);
 	}
 #endif
 
@@ -2816,37 +2820,37 @@ capac_test_exit:
 void free_mem_for_test(struct gtx8_ts_test *gts_test)
 {
 	if (gts_test->rawdata_arr) {
-		kfree(gts_test->rawdata_arr);
+		vfree(gts_test->rawdata_arr);
 		gts_test->rawdata_arr =NULL;
 	}
 	if (gts_test->accord_arr) {
-		kfree(gts_test->accord_arr);
+		vfree(gts_test->accord_arr);
 		gts_test->accord_arr =NULL;
 	}
 	if (gts_test->test_config) {
-		kfree(gts_test->test_config);
+		vfree(gts_test->test_config);
 		gts_test->test_config =NULL;
 	}
 	if (gts_test->orig_config) {
-		kfree(gts_test->orig_config);
+		vfree(gts_test->orig_config);
 		gts_test->orig_config =NULL;
 	}
 #if  ((defined NOISE_DATA_TEST) || (defined SELFNOISE_DATA_TEST))
 	if (gts_test->noise_config) {
-		kfree(gts_test->noise_config);
+		vfree(gts_test->noise_config);
 		gts_test->noise_config =NULL;
 	}
 #endif
 	if (gts_test->test_params) {
-		kfree(gts_test->test_params);
+		vfree(gts_test->test_params);
 		gts_test->test_params =NULL;
 	}
 	if (gts_test->open_res) {
-		kfree(gts_test->open_res);
+		vfree(gts_test->open_res);
 		gts_test->open_res =NULL;
 	}
 	if (gts_test->short_res) {
-		kfree(gts_test->short_res);
+		vfree(gts_test->short_res);
 		gts_test->short_res =NULL;
 	}
 }
@@ -2866,28 +2870,27 @@ int alloc_mem_for_test(struct gtx8_ts_test *gts_test)
 	gts_test->open_res = NULL;
 	gts_test->short_res = NULL;
 
-	gts_test->rawdata_arr = kzalloc(sizeof(struct ts_test_rawdata)*TOTAL_FRAME_NUM,
-			GFP_KERNEL);
+	gts_test->rawdata_arr = vzalloc(sizeof(struct ts_test_rawdata)*TOTAL_FRAME_NUM);
 	if (!gts_test->rawdata_arr) {
 		ts_err("%s: Failed to alloc mem for raw buf\n", __func__);
 		ret = -ENOMEM;
 		goto exit_finish;
 	}
 
-	gts_test->accord_arr = kzalloc(sizeof(struct ts_test_rawdata)*TOTAL_FRAME_NUM, GFP_KERNEL);
+	gts_test->accord_arr = vzalloc(sizeof(struct ts_test_rawdata)*TOTAL_FRAME_NUM);
 	if (!gts_test->accord_arr) {
 		ts_err("%s: Failed to alloc mem for accord buf\n", __func__);
 		ret = -ENOMEM;
 		goto exit_finish;
 	}
 
-	gts_test->test_config = kzalloc(sizeof(struct goodix_ts_config), GFP_KERNEL);
+	gts_test->test_config = vzalloc(sizeof(struct goodix_ts_config));
 	if (!gts_test->test_config) {
 		ts_err("%s: Failed to alloc mem for test cfg\n", __func__);
 		ret = -ENOMEM;
 		goto exit_finish;
 	}
-	gts_test->orig_config = kzalloc(sizeof(struct goodix_ts_config), GFP_KERNEL);
+	gts_test->orig_config = vzalloc(sizeof(struct goodix_ts_config));
 	if (!gts_test->orig_config) {
 		ts_err("%s: Failed to alloc mem for orig cfg\n", __func__);
 		ret = -ENOMEM;
@@ -2895,7 +2898,7 @@ int alloc_mem_for_test(struct gtx8_ts_test *gts_test)
 	}
 
 #if  ((defined NOISE_DATA_TEST) || (defined SELFNOISE_DATA_TEST))
-	gts_test->noise_config = kzalloc(sizeof(struct goodix_ts_config), GFP_KERNEL);
+	gts_test->noise_config = vzalloc(sizeof(struct goodix_ts_config));
 	if (!gts_test->noise_config) {
 		ts_err("%s: Failed to alloc mem for noise cfg\n", __func__);
 		ret = -ENOMEM;
@@ -2903,21 +2906,21 @@ int alloc_mem_for_test(struct gtx8_ts_test *gts_test)
 	}
 #endif
 
-	gts_test->test_params = kzalloc(sizeof(struct ts_test_params), GFP_KERNEL);
+	gts_test->test_params = vzalloc(sizeof(struct ts_test_params));
 	if (!gts_test->test_params) {
 		ts_err("%s: Failed to alloc mem for test_params\n", __func__);
 		ret = -ENOMEM;
 		goto exit_finish;
 	}
 
-	gts_test->open_res = kzalloc(sizeof(struct ts_open_res), GFP_KERNEL);
+	gts_test->open_res = vzalloc(sizeof(struct ts_open_res));
 	if (!gts_test->open_res) {
 		ts_err("%s: Failed to alloc mem for open_res\n", __func__);
 		ret = -ENOMEM;
 		goto exit_finish;
 	}
 
-	gts_test->short_res = kzalloc(sizeof(struct ts_short_res), GFP_KERNEL);
+	gts_test->short_res = vzalloc(sizeof(struct ts_short_res));
 	if (!gts_test->short_res) {
 		ts_err("%s: Failed to alloc mem for short_res\n", __func__);
 		ret = -ENOMEM;
@@ -3021,6 +3024,11 @@ int gtx8_dump_data(void *tsdev, char *buf, int *buf_size)
 	}
 	gts_test->ts = core_data;
 
+	gts_test->test_params = kzalloc(sizeof(struct ts_test_params), GFP_KERNEL);
+	if (!gts_test->test_params) {
+		ts_err("%s: Failed to alloc test_params mem\n", __func__);
+		goto free_test_mem;
+	}
 	ret = gtx8_dump_data_prepare(gts_test);
 	if (ret) {
 		ts_err("%s: Failed dump data prepare\n", __func__);
@@ -3078,6 +3086,11 @@ int gtx8_dump_data(void *tsdev, char *buf, int *buf_size)
 	*buf_size = offset;
 
 exit_finish:
+	if (gts_test->test_params) {
+		kfree(gts_test->test_params);
+		gts_test->test_params = NULL;
+	}
+free_test_mem:
 	if (gts_test) {
 		kfree(gts_test);
 		gts_test = NULL;
