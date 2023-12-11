@@ -1,7 +1,7 @@
 #
 # Goodix touchscreen driver configuration
 #
-config TOUCHSCREEN_GOODIX_GTX9896_I2C
+config TOUCHSCREEN_GOODIX_GTX9896_K6
 	bool "Goodix GTx8 touchscreen"
 	depends on I2C
 	help
@@ -10,7 +10,7 @@ config TOUCHSCREEN_GOODIX_GTX9896_I2C
 
 	  If unsure, say N.
 
-if TOUCHSCREEN_GOODIX_GTX9896_I2C
+if TOUCHSCREEN_GOODIX_GTX9896_K6
 
 config TOUCHSCREEN_GOODIX_GTX9896_UPDATE
 	tristate "Goodix GTx9896 firmware update module"
