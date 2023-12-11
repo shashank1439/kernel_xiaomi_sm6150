@@ -1244,7 +1244,7 @@ static int fg_get_time_ot(struct bq_fg_chip *bq)
 	int ret = 0;
 	int val = 0;
 	int retry = 0;
-	static last_time_ot = 0;
+	static int last_time_ot = 0;
 
 	if (bq->skip_reads)
 		return last_time_ot;
