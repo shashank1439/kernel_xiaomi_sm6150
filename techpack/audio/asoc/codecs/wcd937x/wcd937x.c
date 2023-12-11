@@ -33,6 +33,7 @@
 #include "../msm-cdc-pinctrl.h"
 #include <dt-bindings/sound/audio-codec-port-types.h>
 #include "../msm-cdc-supply.h"
+#include "../fs1815/fsm_public.h"
 
 #define WCD9370_VARIANT 0
 #define WCD9375_VARIANT 5
@@ -866,8 +867,10 @@ static int wcd937x_codec_enable_aux_pa(struct snd_soc_dapm_widget *w,
 			wcd937x->update_wcd_event(wcd937x->handle,
 						WCD_BOLERO_EVT_RX_MUTE,
 						(WCD_RX3 << 0x10));
+		fsm_speaker_onn();
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
+		fsm_speaker_off();
 		if (wcd937x->update_wcd_event)
 			wcd937x->update_wcd_event(wcd937x->handle,
 						WCD_BOLERO_EVT_RX_MUTE,
@@ -952,8 +955,10 @@ static int wcd937x_codec_enable_ear_pa(struct snd_soc_dapm_widget *w,
 						WCD_BOLERO_EVT_RX_MUTE,
 						(WCD_RX1 << 0x10));
 #endif
+		fsm_speaker_onn();
 		break;
 	case SND_SOC_DAPM_PRE_PMD:
+		fsm_speaker_off();
 #ifdef CONFIG_SND_SOC_FOR_ULTRASOUND_PATH
 		if (wcd937x->update_wcd_event)
 			wcd937x->update_wcd_event(wcd937x->handle,

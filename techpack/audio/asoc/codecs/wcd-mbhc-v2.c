@@ -685,6 +685,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 						SND_JACK_LINEOUT |
 						SND_JACK_ANC_HEADPHONE |
 						SND_JACK_UNSUPPORTED);
+			mbhc->force_linein = false;
 		}
 
 		if (mbhc->current_plug == MBHC_PLUG_TYPE_HEADSET &&
@@ -748,6 +749,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 		 * will not be correct resulting in lineout detected
 		 * as headphone.
 		 */
+/*
 		if ((is_pa_on) && mbhc->force_linein == true) {
 			jack_type = SND_JACK_LINEOUT;
 			mbhc->current_plug = MBHC_PLUG_TYPE_HIGH_HPH;
@@ -761,7 +763,7 @@ void wcd_mbhc_report_plug(struct wcd_mbhc *mbhc, int insertion,
 						WCD_MBHC_JACK_MASK);
 			}
 		}
-
+*/
 		mbhc->hph_status |= jack_type;
 
 		pr_debug("%s: Reporting insertion %d(%x)\n", __func__,
