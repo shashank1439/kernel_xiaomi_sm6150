@@ -4827,10 +4827,8 @@ int dsi_panel_enable(struct dsi_panel *panel)
 			       panel->name, rc);
 		else
 			panel->panel_initialized = true;
+		mutex_unlock(&panel->panel_lock);
 	}
-
-	if (is_first_supply_panel)
-		mutex_lock(&panel->panel_lock);
 
 	if (panel->hbm_mode)
 		dsi_panel_apply_hbm_mode(panel);
