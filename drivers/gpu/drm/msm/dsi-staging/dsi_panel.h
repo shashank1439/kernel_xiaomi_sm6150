@@ -409,4 +409,16 @@ int dsi_panel_apply_hbm_mode(struct dsi_panel *panel);
 
 int dsi_panel_apply_dc_mode(struct dsi_panel *panel);
 
+int dsi_panel_write_cmd_set(struct dsi_panel *panel,
+				struct dsi_panel_cmd_set *cmd_sets);
+
+int dsi_panel_read_cmd_set(struct dsi_panel *panel,
+				struct dsi_read_config *read_config);
+
+int dsi_panel_db_ic_enable(struct dsi_panel *panel);
+
+int dsi_panel_mipi_reg_show(struct dsi_panel *panel);
+
+ssize_t dsi_panel_mipi_reg_write(struct dsi_panel *panel,
+				char *buf, size_t count);
 #endif /* _DSI_PANEL_H_ */
