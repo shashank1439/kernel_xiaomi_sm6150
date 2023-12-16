@@ -24,6 +24,8 @@
  * as published by the Free Software Foundation.
  */
 
+#define FPC_DRM_INTERFACE_WA
+
 #include <linux/atomic.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
