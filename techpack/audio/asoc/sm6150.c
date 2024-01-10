@@ -46,7 +46,6 @@
 #include <dt-bindings/sound/audio-codec-port-types.h>
 #include "codecs/bolero/wsa-macro.h"
 #include "codecs/wcd937x/wcd937x.h"
-#include "codecs/fs1815/fsm_public.h"
 #ifdef CONFIG_SND_SOC_TFA9874_FOR_DAVI
 #include "codecs/tfa98xx/inc/tfa_platform_interface_definition.h"
 #endif
@@ -5119,6 +5118,10 @@ static int msm_audrx_tasha_init(struct snd_soc_pcm_runtime *rtd)
 err:
 	return ret;
 }
+
+#ifdef CONFIG_SND_SOC_FS15XX
+extern void fsm_add_codec_controls(struct snd_soc_codec *codec);
+#endif
 
 static int msm_int_audrx_init(struct snd_soc_pcm_runtime *rtd)
 {
