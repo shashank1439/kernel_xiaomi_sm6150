@@ -1121,8 +1121,6 @@ static int sugov_init(struct cpufreq_policy *policy)
 
 	tunables->iowait_boost_enable = false;
 
-        tunables->pl = 1;
-
 	switch (policy->cpu) {
 	default:
 	case 0:
