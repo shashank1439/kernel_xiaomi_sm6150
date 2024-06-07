@@ -222,7 +222,6 @@ static void _sched_set_boost(int type)
 #ifdef CONFIG_DEVFREQ_BOOST
 	if (type > 0) {
 		devfreq_boost_kick(DEVFREQ_MSM_CPUBW);
-                devfreq_boost_kick(DEVFREQ_MSM_LLCCBW);
 	}
 		return;
 #endif
