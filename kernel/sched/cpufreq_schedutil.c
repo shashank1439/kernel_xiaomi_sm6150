@@ -1115,7 +1115,7 @@ static int sugov_init(struct cpufreq_policy *policy)
                 break;
         }
 
-	tunables->iowait_boost_enable = false;
+	tunables->iowait_boost_enable = true;
 
         tunables->pl = 1;
 
