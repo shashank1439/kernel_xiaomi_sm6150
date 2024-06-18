@@ -65,7 +65,7 @@ static void __devfreq_boost_kick(struct boost_dev *b)
 
         unsigned int period = CONFIG_DEVFREQ_INPUT_BOOST_DURATION_MS * 1;
 
-	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state) || is_battery_saver_on())
+	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	set_bit(INPUT_BOOST, &b->state);
@@ -78,7 +78,7 @@ void devfreq_boost_kick(enum df_device device)
 {
 	struct df_boost_drv *d = &df_boost_drv_g;
 	
-	if (disable_boosts)
+	if (disable_boosts || is_battery_saver_on())
 		return;
 
 	__devfreq_boost_kick(d->devices + device);
@@ -90,7 +90,7 @@ static void __devfreq_boost_kick_max(struct boost_dev *b,
 	unsigned long boost_jiffies = msecs_to_jiffies(duration_ms);
 	unsigned long curr_expires, new_expires;
 
-	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state) || is_battery_saver_on())
+	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	do {
@@ -122,7 +122,7 @@ void devfreq_boost_kick_max(enum df_device device, unsigned int duration_ms)
 {
 	struct df_boost_drv *d = &df_boost_drv_g;
 	
-	if (disable_boosts)
+	if (disable_boosts || is_battery_saver_on())
 		return;
 
 	__devfreq_boost_kick_max(d->devices + device, duration_ms);
