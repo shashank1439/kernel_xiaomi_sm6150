@@ -27,6 +27,7 @@
 #include <drm/drm_flip_work.h>
 #include <linux/clk/qcom.h>
 #include <linux/sde_rsc.h>
+#include <linux/devfreq_boost.h>
 
 #include "sde_kms.h"
 #include "sde_hw_lm.h"
@@ -4318,6 +4319,8 @@ void sde_crtc_commit_kickoff(struct drm_crtc *crtc,
 		return;
 
 	SDE_ATRACE_BEGIN("crtc_commit");
+
+		devfreq_boost_kick(DEVFREQ_CPU_DDR_BW);
 
 	is_error = _sde_crtc_prepare_for_kickoff_rot(dev, crtc);
 
