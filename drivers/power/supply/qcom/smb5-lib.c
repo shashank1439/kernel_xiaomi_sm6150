@@ -748,9 +748,6 @@ int smblib_set_charge_param(struct smb_charger *chg,
 	if (!chg->cp_psy)
 		chg->cp_psy = power_supply_get_by_name("bq2597x-standalone");
 
-	if (!chg->cp_psy)
-		chg->cp_psy = power_supply_get_by_name("ln8000");
-
 	if (chg->cp_psy && param->reg == CHGR_FLOAT_VOLTAGE_CFG_REG) {
 		power_supply_get_property(chg->cp_psy, POWER_SUPPLY_PROP_CP_VBAT_CALIBRATE, &val);
 		if (val.intval >= -20000 && val.intval <= 20000) {
