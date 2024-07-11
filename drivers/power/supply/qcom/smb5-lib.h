@@ -120,6 +120,9 @@ enum print_reason {
 /* use for BQ2597X */
 #define BATT_BQ2597X_VOTER		"BATT_BQ2597X_VOTER"
 
+/* use for LN8000 */
+#define BATT_LN8000_VOTER		"BATT_LN8000_VOTER"
+
 #define BOOST_BACK_STORM_COUNT	3
 #define WEAK_CHG_STORM_COUNT	8
 
