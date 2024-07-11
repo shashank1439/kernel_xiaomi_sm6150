@@ -117,6 +117,9 @@ enum print_reason {
 #define QC3P5_VOTER			"QC3P5_VOTER"
 #define FCC_MAX_QC3P5_VOTER		"FCC_MAX_QC3P5_VOTER"
 
+/* use for BQ2597X */
+#define BATT_BQ2597X_VOTER		"BATT_BQ2597X_VOTER"
+
 #define BOOST_BACK_STORM_COUNT	3
 #define WEAK_CHG_STORM_COUNT	8
 
@@ -643,6 +646,7 @@ struct smb_charger {
 	struct delayed_work	reduce_fcc_work;
 	struct delayed_work	status_report_work;
 	struct delayed_work	thermal_setting_work;
+	struct delayed_work	check_vbat_work;
 	struct delayed_work	reverse_boost_work;
 
 	struct alarm		lpd_recheck_timer;
