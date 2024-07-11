@@ -32,7 +32,7 @@
 #define PD_SRC_PDO_TYPE_VARIABLE	2
 #define PD_SRC_PDO_TYPE_AUGMENTED	3
 
-#define BATT_MAX_CHG_VOLT		4400
+#define BATT_MAX_CHG_VOLT		4450
 #define BATT_FAST_CHG_CURR		6000
 #define	BUS_OVP_THRESHOLD		12000
 #define	BUS_OVP_ALARM_THRESHOLD		9500
@@ -44,7 +44,9 @@
 #define BAT_CURR_LOOP_LMT		BATT_FAST_CHG_CURR
 #define BUS_VOLT_LOOP_LMT		BUS_OVP_THRESHOLD
 
-#define PM_WORK_RUN_INTERVAL		100
+#define PM_WORK_RUN_NORMAL_INTERVAL		500
+#define PM_WORK_RUN_QUICK_INTERVAL		200
+#define PM_WORK_RUN_CRITICAL_INTERVAL		100
 
 enum {
 	PM_ALGO_RET_OK,
@@ -140,6 +142,30 @@ static int pd_get_batt_current_thermal_level(struct usbpd_pm *pdpm, int *level)
 	pr_debug("pval.intval: %d\n", pval.intval);
 
 	*level = pval.intval;
+	return rc;
+}
+
+/* get capacity from battery power supply property */
+static int pd_get_batt_capacity(struct usbpd_pm *pdpm, int *capacity)
+{
+	union power_supply_propval pval = {0,};
+	int rc = 0;
+
+	usbpd_check_batt_psy(pdpm);
+
+	if (!pdpm->sw_psy)
+		return -ENODEV;
+
+	rc = power_supply_get_property(pdpm->sw_psy,
+				POWER_SUPPLY_PROP_CAPACITY, &pval);
+	if (rc < 0) {
+		pr_info("Couldn't get battery capacity:%d\n", rc);
+		return rc;
+	}
+
+	pr_info("battery capacity is : %d\n", pval.intval);
+
+	*capacity = pval.intval;
 	return rc;
 }
 
@@ -905,8 +931,8 @@ static void usbpd_update_pps_status(struct usbpd_pm *pdpm)
 	}
 }
 
-#define TAPER_TIMEOUT	(5000 / PM_WORK_RUN_INTERVAL)
-#define IBUS_CHANGE_TIMEOUT  (500 / PM_WORK_RUN_INTERVAL)
+#define TAPER_TIMEOUT	(25000 / PM_WORK_RUN_NORMAL_INTERVAL)
+#define IBUS_CHANGE_TIMEOUT  (2500 / PM_WORK_RUN_NORMAL_INTERVAL)
 static int usbpd_pm_fc2_charge_algo(struct usbpd_pm *pdpm)
 {
 	int ret = 0;
@@ -1134,6 +1160,7 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 	static bool recover;
 	int effective_fcc_val = 0;
 	int thermal_level = 0;
+	int capacity = 0;
 	static int curr_fcc_lmt, curr_ibus_lmt, retry_count;
 	static int request_fail_count = 0;
 
@@ -1148,6 +1175,8 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 		pdpm->is_temp_out_fc2_range = pd_disable_cp_by_jeita_status(pdpm);
 		pr_info("is_temp_out_fc2_range:%d\n", pdpm->is_temp_out_fc2_range);
 
+		pd_get_batt_capacity(pdpm, &capacity);
+
 		effective_fcc_val = usbpd_get_effective_fcc_val(pdpm);
 
 		if (effective_fcc_val > 0) {
@@ -1161,8 +1190,8 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 
 		if (pdpm->cp.vbat_volt < pm_config.min_vbat_for_cp) {
 			pr_info("batt_volt %d, waiting...\n", pdpm->cp.vbat_volt);
-		} else if (pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt - 50) {
-			pr_info("batt_volt %d is too high for cp, charging with switch charger\n",
+		} else if (pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt - 50 || capacity > 95) {
+			pr_info("batt_volt %d or capacity is too high for cp, charging with switch charger\n",
 					pdpm->cp.vbat_volt);
 			usbpd_pm_move_state(pdpm, PD_PM_STATE_FC2_EXIT);
 			if (pm_config.bat_volt_lp_lmt < BAT_VOLT_LOOP_LMT)
@@ -1410,6 +1439,8 @@ static void usbpd_pm_workfunc(struct work_struct *work)
 	struct usbpd_pm *pdpm = container_of(work, struct usbpd_pm,
 					pm_work.work);
 
+	int internal = PM_WORK_RUN_NORMAL_INTERVAL;
+
 	usbpd_pm_update_sw_status(pdpm);
 	usbpd_pm_update_cp_status(pdpm);
 	usbpd_pm_update_cp_sec_status(pdpm);
@@ -1418,9 +1449,15 @@ static void usbpd_pm_workfunc(struct work_struct *work)
 	pr_info("%s:pd_bat_volt_lp_lmt=%d, vbatt_now=%d\n",
 			__func__, pm_config.bat_volt_lp_lmt, pdpm->cp.vbat_volt);
 
-	if (!usbpd_pm_sm(pdpm) && pdpm->pd_active)
+	if (!usbpd_pm_sm(pdpm) && pdpm->pd_active) {
+		if (pdpm->state == PD_PM_STATE_FC2_ENTRY_2)
+			internal = PM_WORK_RUN_QUICK_INTERVAL;
+		else
+			internal = PM_WORK_RUN_NORMAL_INTERVAL;
+
 		schedule_delayed_work(&pdpm->pm_work,
-				msecs_to_jiffies(PM_WORK_RUN_INTERVAL));
+				msecs_to_jiffies(internal));
+	}
 }
 
 static void usbpd_pm_disconnect(struct usbpd_pm *pdpm)

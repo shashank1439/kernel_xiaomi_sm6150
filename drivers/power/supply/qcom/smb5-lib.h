@@ -168,6 +168,11 @@ enum print_reason {
 /* defined for un_compliant Type-C cable */
 #define CC_UN_COMPLIANT_START_DELAY_MS	700
 
+#define REVERSE_BOOST_WORK_RECHECK_DELAY_MS	100
+#define REVERSE_BOOST_WORK_START_DELAY_MS	300
+#define REVERSE_BOOST_MIN_IBAT_MA		100
+#define REVERSE_BOOST_MAX_IBUS_MA		200
+
 #define VBAT_TO_VRAW_ADC(v)		div_u64((u64)v * 1000000UL, 194637UL)
 
 #define ITERM_LIMITS_PMI632_MA		5000
@@ -638,6 +643,7 @@ struct smb_charger {
 	struct delayed_work	reduce_fcc_work;
 	struct delayed_work	status_report_work;
 	struct delayed_work	thermal_setting_work;
+	struct delayed_work	reverse_boost_work;
 
 	struct alarm		lpd_recheck_timer;
 	struct alarm		moisture_protection_alarm;
@@ -880,6 +886,9 @@ struct smb_charger {
 	int 			qc3p5_power_limit_w;
 
 	bool			pps_fcc_therm_work_disabled;
+
+	bool			reverse_boost_wa;
+	int			reverse_count;
 };
 
 enum quick_charge_type {
