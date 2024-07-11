@@ -294,8 +294,14 @@ static int get_step_chg_jeita_setting_from_profile(struct step_chg_info *chip)
 	if (batt_id_ohms < 0)
 		return -EBUSY;
 
+#ifdef CONFIG_K6_CHARGE
+	profile_node = of_batterydata_get_best_profile(batt_node,
+					batt_id_ohms / 1000, "K6_sunwoda_5020mah");
+#else
 	profile_node = of_batterydata_get_best_profile(batt_node,
 					batt_id_ohms / 1000, NULL);
+#endif
+
 	if (IS_ERR(profile_node))
 		return PTR_ERR(profile_node);
 

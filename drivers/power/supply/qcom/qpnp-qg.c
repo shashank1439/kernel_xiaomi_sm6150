@@ -3623,6 +3623,12 @@ static int qg_load_battery_profile(struct qpnp_qg *chip)
 	}
 #endif
 
+#ifdef CONFIG_K6_CHARGE
+	pr_err("is_batt_vendor_swd is %d\n", is_batt_vendor_swd);
+	profile_node = of_batterydata_get_best_profile(chip->batt_node,
+				chip->batt_id_ohm / 1000, "K6_sunwoda_5020mah");
+#endif
+
 	rc = of_property_read_string(profile_node, "qcom,battery-type",
 				&chip->bp.batt_type_str);
 	if (rc < 0) {
