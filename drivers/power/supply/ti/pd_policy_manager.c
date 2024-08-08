@@ -61,11 +61,6 @@ enum {
 	VBUS_ERROR_HIGH,
 };
 
-enum {
-	SC8551_CHARGE_MODE_DIV2,
-	SC8551_CHARGE_MODE_BYPASS,
-};
-
 static struct pdpm_config pm_config = {
 	.bat_volt_lp_lmt		= BAT_VOLT_LOOP_LMT,
 	.bat_curr_lp_lmt		= BAT_CURR_LOOP_LMT + 1000,
@@ -148,7 +143,6 @@ static bool pd_disable_cp_by_jeita_status(struct usbpd_pm *pdpm)
 {
 	union power_supply_propval pval = {0,};
 	int batt_temp = 0, bq_input_suspend = 0;
-	int warm_thres, cool_thres;
 	int rc;
 
 	usbpd_check_batt_psy(pdpm);
@@ -180,25 +174,14 @@ static bool pd_disable_cp_by_jeita_status(struct usbpd_pm *pdpm)
 	batt_temp = pval.intval;
 	pr_info("batt_temp: %d\n", batt_temp);
 
-	if (pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_DIV2
-			|| pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS) {
-		warm_thres = JEITA_BYPASS_WARM_THR;
-		cool_thres = JEITA_BYPASS_COOL_THR;
-	} else {
-		warm_thres = JEITA_WARM_THR;
-		cool_thres = JEITA_COOL_THR;
-	}
-	pr_info("warm_thres: %d\n", warm_thres);
-	pr_info("cool_thres: %d\n", cool_thres);
-
-	if (batt_temp >= warm_thres && !pdpm->jeita_triggered) {
+	if (batt_temp >= JEITA_WARM_THR && !pdpm->jeita_triggered) {
 		pdpm->jeita_triggered = true;
 		return true;
-	} else if (batt_temp <= cool_thres && !pdpm->jeita_triggered) {
+	} else if (batt_temp <= JEITA_COOL_THR && !pdpm->jeita_triggered) {
 		pdpm->jeita_triggered = true;
 		return true;
-	} else if ((batt_temp <= (warm_thres - JEITA_HYSTERESIS))
-			&& (batt_temp >= (cool_thres + JEITA_HYSTERESIS))
+	} else if ((batt_temp <= (JEITA_WARM_THR - JEITA_HYSTERESIS))
+			&& (batt_temp >= (JEITA_COOL_THR + JEITA_HYSTERESIS))
 			&& pdpm->jeita_triggered) {
 		pdpm->jeita_triggered = false;
 		return false;
@@ -405,16 +388,6 @@ static void usbpd_pm_update_cp_status(struct usbpd_pm *pdpm)
 		return;
 
 	ret = power_supply_get_property(pdpm->cp_psy,
-			POWER_SUPPLY_PROP_TI_CHARGE_MODE, &val);
-	if (!ret)
-		pdpm->cp.sc8551_charge_mode = val.intval;
-
-	ret = power_supply_get_property(pdpm->cp_psy,
-			POWER_SUPPLY_PROP_TI_BYPASS_MODE_ENABLED, &val);
-	if (!ret)
-		pdpm->cp.sc8551_bypass_charge_enable = val.intval;
-
-	ret = power_supply_get_property(pdpm->cp_psy,
 			POWER_SUPPLY_PROP_TI_BATTERY_VOLTAGE, &val);
 	if (!ret)
 		pdpm->cp.vbat_volt = val.intval;
@@ -511,13 +484,11 @@ static void usbpd_pm_update_cp_status(struct usbpd_pm *pdpm)
 	pr_debug("cp: vbat:%d, ibat:%d, \
 			vbus:%d(hi_lo:%d), ibus:%d, \
 			tbus:%d, tbat:%d, tdie:%d, \
-			bat_pres:%d, vbus_pres:%d, chg_en:%d, \
-			bypass_en:%d, chg_mode:%d\n",
+			bat_pres:%d, vbus_pres:%d, chg_en:%d\n",
 			pdpm->cp.vbat_volt, pdpm->cp.ibat_curr,
 			pdpm->cp.vbus_volt, pdpm->cp.bus_error_status, pdpm->cp.ibus_curr,
 			pdpm->cp.bus_temp, pdpm->cp.bat_temp, pdpm->cp.die_temp,
-			pdpm->cp.batt_pres, pdpm->cp.vbus_pres, pdpm->cp.charge_enabled,
-			pdpm->cp.sc8551_bypass_charge_enable, pdpm->cp.sc8551_charge_mode);
+			pdpm->cp.batt_pres, pdpm->cp.vbus_pres, pdpm->cp.charge_enabled);
 }
 
 static void usbpd_pm_update_cp_sec_status(struct usbpd_pm *pdpm)
@@ -613,115 +584,6 @@ static int usbpd_pm_check_cp_sec_enabled(struct usbpd_pm *pdpm)
 	if (!ret)
 		pdpm->cp_sec.charge_enabled = !!val.intval;
 	pr_info("pdpm->cp_sec.charge_enabled:%d\n", pdpm->cp_sec.charge_enabled);
-	return ret;
-}
-
-static int usbpd_pm_set_cp_charge_mode(struct usbpd_pm *pdpm, int mode)
-{
-	int ret;
-	union power_supply_propval val = {0,};
-
-	usbpd_check_cp_psy(pdpm);
-	if (!pdpm->cp_psy)
-		return -ENODEV;
-
-	if (mode != SC8551_CHARGE_MODE_DIV2 && mode != SC8551_CHARGE_MODE_BYPASS) {
-		pr_err("%s, chg_mode(%d) is invalid.\n", __func__, mode);
-		return -EINVAL;
-	}
-
-	pr_info("%s, chg_mode is set to %d\n", __func__, mode);
-	val.intval = mode;
-	ret = power_supply_set_property(pdpm->cp_psy,
-			POWER_SUPPLY_PROP_TI_CHARGE_MODE, &val);
-
-	return ret;
-}
-
-static int usbpd_pm_update_cp_charge_mode(struct usbpd_pm *pdpm)
-{
-	int fcc = 0, chg_mode = 0;
-	int thermal_level = 0;
-
-	usbpd_check_bms_psy(pdpm);
-	if (!pdpm->bms_psy)
-		return -ENODEV;
-
-	if (pdpm->cp.sc8551_bypass_charge_enable == 0) {
-		chg_mode = SC8551_CHARGE_MODE_DIV2;
-	} else {
-		fcc = usbpd_get_effective_fcc_val(pdpm);
-		pd_get_batt_current_thermal_level(pdpm, &thermal_level);
-		if ((thermal_level > BYPASS_THERMAL_ENTER_LEVEL
-				|| fcc <= BYPASS_FCC_ENTER_THRES)
-				&& pdpm->cp.vbat_volt > BYPASS_VBAT_ENTER_THRES) {
-			chg_mode = SC8551_CHARGE_MODE_BYPASS;
-		} else if (thermal_level < BYPASS_THERMAL_ENTER_LEVEL
-				|| fcc > BYPASS_FCC_EXIT_THRES){
-			chg_mode = SC8551_CHARGE_MODE_DIV2;
-		} else {
-			chg_mode = pdpm->cp.sc8551_charge_mode;
-		}
-	}
-
-	pr_info("bypass_en:%d, cp_chg_mode:%d:%d, therm_level:%d, fcc:%d, vbat:%d\n",
-			pdpm->cp.sc8551_bypass_charge_enable,
-			pdpm->cp.sc8551_charge_mode, chg_mode,
-			thermal_level, fcc, pdpm->cp.vbat_volt);
-
-	return chg_mode;
-}
-
-static int usbpd_pm_check_cp_charge_mode(struct usbpd_pm *pdpm)
-{
-	int ret = 0;
-	union power_supply_propval val = {0,};
-
-	usbpd_check_cp_psy(pdpm);
-	if (!pdpm->cp_psy)
-		return -ENODEV;
-
-	ret = power_supply_get_property(pdpm->cp_psy,
-			POWER_SUPPLY_PROP_TI_CHARGE_MODE, &val);
-	if (!ret)
-		pdpm->cp.sc8551_charge_mode = val.intval;
-
-	return ret;
-}
-
-static int usbpd_pm_switch_cp_charge_mode(struct usbpd_pm *pdpm)
-{
-	int ret = 0;
-	int chg_mode = 0;
-
-	ret = usbpd_pm_check_cp_charge_mode(pdpm);
-	if (ret < 0) {
-		pr_err("Failed to check cp charge mode, ret:%d.\n", ret);
-		return ret;
-	}
-
-	if (pdpm->cp.sc8551_bypass_charge_enable != 1)
-		return -EPERM;
-
-	chg_mode = usbpd_pm_update_cp_charge_mode(pdpm);
-	if (chg_mode != pdpm->cp.sc8551_charge_mode) {
-		if (pdpm->cp.charge_enabled) {
-			usbpd_pm_enable_cp(pdpm, false);
-			msleep(30);
-			usbpd_pm_check_cp_enabled(pdpm);
-		}
-
-		pr_info("cp charge mode switch from %d to %d.\n",
-				pdpm->cp.sc8551_charge_mode, chg_mode);
-		usbpd_pm_set_cp_charge_mode(pdpm, chg_mode);
-
-		ret = usbpd_pm_check_cp_charge_mode(pdpm);
-		if (ret < 0)
-			pr_err("Failed to check cp charge mode, ret:%d.\n", ret);
-
-		ret = 1;
-	}
-
 	return ret;
 }
 
@@ -909,7 +771,6 @@ static void usbpd_update_pps_status(struct usbpd_pm *pdpm)
 #define IBUS_CHANGE_TIMEOUT  (500 / PM_WORK_RUN_INTERVAL)
 static int usbpd_pm_fc2_charge_algo(struct usbpd_pm *pdpm)
 {
-	int ret = 0;
 	int steps;
 	int sw_ctrl_steps = 0;
 	int hw_ctrl_steps = 0;
@@ -929,18 +790,14 @@ static int usbpd_pm_fc2_charge_algo(struct usbpd_pm *pdpm)
 
 	if (effective_fcc_val > 0) {
 		curr_fcc_limit = min(pm_config.bat_curr_lp_lmt, effective_fcc_val);
-		if (pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS) {
-			curr_ibus_limit = curr_fcc_limit;
-		} else {
-			curr_ibus_limit = curr_fcc_limit >> 1;
-			/*
-			 * bq25970 alone compensate 100mA,  bq25970 master ans slave  compensate 300mA,
-			 * for target curr_ibus_limit for bq adc accurancy is below standard and power suuply system current
-			 */
-			curr_ibus_limit += pm_config.bus_curr_compensate;
-		}
+		curr_ibus_limit = curr_fcc_limit >> 1;
+		/*
+		 * bq25970 alone compensate 100mA,  bq25970 master ans slave  compensate 300mA,
+		 * for target curr_ibus_limit for bq adc accurancy is below standard and power suuply system current
+		 */
+		curr_ibus_limit += pm_config.bus_curr_compensate;
+		curr_ibus_limit = min(curr_ibus_limit, pdpm->apdo_max_curr);
 	}
-	curr_ibus_limit = min(curr_ibus_limit, pdpm->apdo_max_curr);
 	ibus_limit = curr_ibus_limit;
 
 	/* reduce bus current in cv loop */
@@ -964,9 +821,9 @@ static int usbpd_pm_fc2_charge_algo(struct usbpd_pm *pdpm)
 
 	ibus_limit = min(ibus_limit, pdpm->apdo_max_curr);
 
-	pr_info("chg_mode:%d, curr_ibus_limit:%d, ibus_limit:%d, bat_curr_lp_lmt:%d, effective_fcc_val:%d, apdo_max_curr:%d\n",
-			pdpm->cp.sc8551_charge_mode, curr_ibus_limit, ibus_limit,
-			pm_config.bat_curr_lp_lmt, effective_fcc_val, pdpm->apdo_max_curr);
+	pr_info("curr_ibus_limit:%d, ibus_limit:%d, bat_curr_lp_lmt:%d, effective_fcc_val:%d, apdo_max_curr:%d\n",
+			curr_ibus_limit, ibus_limit, pm_config.bat_curr_lp_lmt,
+			effective_fcc_val, pdpm->apdo_max_curr);
 
 	/* battery voltage loop*/
 	if (pdpm->cp.vbat_volt > pm_config.bat_volt_lp_lmt)
@@ -1030,10 +887,7 @@ static int usbpd_pm_fc2_charge_algo(struct usbpd_pm *pdpm)
 		pr_info("bat_therm_fault:%d\n", pdpm->cp.bat_therm_fault);
 		return PM_ALGO_RET_THERM_FAULT;
 	} else if (pdpm->is_temp_out_fc2_range
-			|| (thermal_level >= MAX_THERMAL_LEVEL
-			&& pdpm->cp.sc8551_charge_mode != SC8551_CHARGE_MODE_BYPASS)
-			|| (thermal_level >= BYPASS_THERMAL_EXIT_LEVEL
-			&& pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS)) {
+			|| thermal_level >= MAX_THERMAL_LEVEL) {
 		pr_info("thermal level too high or batt temp is out of fc2 range\n");
 		return PM_ALGO_RET_CHG_DISABLED;
 	} else if (pdpm->cp.bat_ocp_fault || pdpm->cp.bus_ocp_fault
@@ -1072,13 +926,6 @@ static int usbpd_pm_fc2_charge_algo(struct usbpd_pm *pdpm)
 		}
 	} else {
 		fc2_taper_timer = 0;
-	}
-
-	/* sc8551 mode switch*/
-	ret = usbpd_pm_switch_cp_charge_mode(pdpm);
-	if (ret > 0) {
-		pr_info("charge mode changed, re-run statemachine\n");
-		return PM_ALGO_RET_CHG_DISABLED;
 	}
 
 	/*TODO: customer can add hook here to check system level
@@ -1152,10 +999,7 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 
 		if (effective_fcc_val > 0) {
 			curr_fcc_lmt = min(pm_config.bat_curr_lp_lmt, effective_fcc_val);
-			if (pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS)
-				curr_ibus_lmt = curr_fcc_lmt;
-			else
-				curr_ibus_lmt = curr_fcc_lmt >> 1;
+			curr_ibus_lmt = curr_fcc_lmt >> 1;
 			pr_info("curr_ibus_lmt:%d\n", curr_ibus_lmt);
 		}
 
@@ -1170,10 +1014,7 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 		} else if (!pd_get_bms_digest_verified(pdpm)) {
 			pr_info("bms digest is not verified, waiting...\n");
 		} else if (pdpm->is_temp_out_fc2_range
-			|| (thermal_level >= MAX_THERMAL_LEVEL
-			&& pdpm->cp.sc8551_charge_mode != SC8551_CHARGE_MODE_BYPASS)
-			|| (thermal_level >= BYPASS_THERMAL_EXIT_LEVEL
-			&& pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS)) {
+			|| thermal_level >= MAX_THERMAL_LEVEL) {
 			pr_info("thermal too high or batt temp is out of fc2 range, waiting...\n");
 		} else if (pdpm->sw.slowly_charging) {
 			pr_info("slowly charging feature is on, waiting...\n");
@@ -1198,21 +1039,9 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 		break;
 
 	case PD_PM_STATE_FC2_ENTRY_1:
-		usbpd_pm_switch_cp_charge_mode(pdpm);
-		if (pdpm->cp.sc8551_bypass_charge_enable == 1
-				&& pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS) {
-			if (curr_fcc_lmt > XIAOMI_LOW_POWER_PPS_CURR_MAX)
-				curr_ibus_lmt = XIAOMI_LOW_POWER_PPS_CURR_MAX;
-			else
-				curr_ibus_lmt = curr_fcc_lmt;
-			pdpm->request_voltage = pdpm->cp.vbat_volt + BUS_VOLT_INIT_UP * 2;
-			pdpm->request_current = min(pdpm->apdo_max_curr, curr_ibus_lmt);
-			pdpm->request_current = min(pdpm->request_current, MAX_BYPASS_CURRENT_MA);
-		} else {
-			curr_ibus_lmt = curr_fcc_lmt >> 1;
-			pdpm->request_voltage = pdpm->cp.vbat_volt * 2 + BUS_VOLT_INIT_UP;
-			pdpm->request_current = min(pdpm->apdo_max_curr, curr_ibus_lmt);
-		}
+		curr_ibus_lmt = curr_fcc_lmt >> 1;
+		pdpm->request_voltage = pdpm->cp.vbat_volt * 2 + BUS_VOLT_INIT_UP;
+		pdpm->request_current = min(pdpm->apdo_max_curr, curr_ibus_lmt);
 
 		usbpd_select_pdo(pdpm->pd, pdpm->apdo_selected_pdo,
 				pdpm->request_voltage * 1000, pdpm->request_current * 1000);
@@ -1229,8 +1058,7 @@ static int usbpd_pm_sm(struct usbpd_pm *pdpm)
 		pr_info("bus_err_st:%d, req_vol:%dmV, cur_vol:%d, req_curr:%d, vbat:%d, retry:%d\n",
 				pdpm->cp.bus_error_status, pdpm->request_voltage, pdpm->cp.vbus_volt, pdpm->request_current, pdpm->cp.vbat_volt, tune_vbus_retry);
 		if (pdpm->cp.bus_error_status == VBUS_ERROR_LOW ||
-				(pdpm->cp.vbus_volt < pdpm->cp.vbat_volt * 2 + 300 && pdpm->cp.sc8551_charge_mode != SC8551_CHARGE_MODE_BYPASS) ||
-				(pdpm->cp.vbus_volt < pdpm->cp.vbat_volt + BUS_VOLT_INIT_UP && pdpm->cp.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS)) {
+				pdpm->cp.vbus_volt < pdpm->cp.vbat_volt * 2 + 300) {
 			tune_vbus_retry++;
 			pdpm->request_voltage += STEP_MV;
 			usbpd_select_pdo(pdpm->pd, pdpm->apdo_selected_pdo,
