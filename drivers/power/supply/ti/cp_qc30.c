@@ -90,11 +90,6 @@ enum {
 	VBUS_ERROR_HIGH,
 };
 
-enum {
-	SC8551_CHARGE_MODE_DIV2,
-	SC8551_CHARGE_MODE_BYPASS,
-};
-
 static struct sys_config sys_config = {
 	.bat_volt_lp_lmt		= BAT_VOLT_LOOP_LMT,
 	.ffc_bat_volt_lmt		= BAT_VOLT_LOOP_LMT,
@@ -393,10 +388,6 @@ static void cp_update_fc_status(void)
 	if (!ret)
 		pm_state.bq2597x.bus_error_status = val.intval;
 
-	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_TI_CHARGE_MODE, &val);
-	if (!ret)
-		pm_state.bq2597x.sc8551_charge_mode = val.intval;
-
 	if (pm_state.bq2597x.vbus_pres == 1) {
 		cp_update_bms_ibat();
 		pm_state.bq2597x.ibat_curr = pm_state.ibat_now;
@@ -569,31 +560,6 @@ static void cp_update_sw_status(void)
 {
 	cp_check_sw_enabled();
 	cp_check_sw_limited();
-}
-
-static int cp_set_charge_mode(int mode)
-{
-	int ret;
-	struct power_supply *psy;
-	union power_supply_propval val = {0,};
-
-	psy = cp_get_fc_psy();
-	if (!psy)
-		return -ENODEV;
-
-
-	if (mode != SC8551_CHARGE_MODE_DIV2
-			&& mode != SC8551_CHARGE_MODE_BYPASS) {
-		pr_err("%s, chg_mode(%d) is invalid.\n", __func__, mode);
-		return -EINVAL;
-	}
-
-	pr_info("%s, chg_mode set to %d\n", __func__, mode);
-	val.intval = mode;
-	ret = power_supply_set_property(psy,
-			POWER_SUPPLY_PROP_TI_CHARGE_MODE, &val);
-
-	return ret;
 }
 
 static int cp_set_fake_hvdcp3(bool enable)
@@ -974,10 +940,6 @@ void cp_statemachine(unsigned int port)
 
 		if (pm_state.usb_type == POWER_SUPPLY_TYPE_USB_HVDCP_3
 				|| pm_state.usb_type == POWER_SUPPLY_TYPE_USB_HVDCP_3P5) {
-			if (pm_state.bq2597x.sc8551_charge_mode == SC8551_CHARGE_MODE_BYPASS) {
-				pr_info("sc8551 should swap to DiV2 mode with QC charging.\n");
-				cp_set_charge_mode(SC8551_CHARGE_MODE_DIV2);
-			}
 
 			pr_info("vbus_volt:%d\n", pm_state.bq2597x.vbus_volt);
 			cp_reset_vbus_volt();

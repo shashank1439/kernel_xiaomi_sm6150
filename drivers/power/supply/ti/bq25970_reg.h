@@ -438,9 +438,6 @@
 #define BQ2597X_REG_13					0x13
 #define BQ2597X_DEV_ID_MASK				0x0F
 #define BQ2597X_DEV_ID_SHIFT				0
-#define BQ25968_DEVICE_ID				0x16
-#define BQ25970_DEVICE_ID				0x10
-#define SC8551_DEVICE_ID				0x00
 
 /* Register 14h */
 #define BQ2597X_REG_14					0x14
@@ -792,37 +789,5 @@
 #define BQ2597X_IBUS_LOW_DG_SHIFT			3
 #define BQ2597X_IBUS_LOW_DG_10US			0
 #define BQ2597X_IBUS_LOW_DG_5MS				1
-
-#define SC8551_IBUS_ADC_LSB				1.5625
-#define SC8551_VBUS_ADC_LSB				3.75
-#define SC8551_VAC_ADC_LSB				5
-#define SC8551_VOUT_ADC_LSB				1.25
-
-#ifdef CONFIG_K9A_CHARGE
-#define SC8551_VBAT_ADC_LSB				(1.25*1.007)
-#else
-#define SC8551_VBAT_ADC_LSB				(1.25*1.0044)
-#endif
-
-#define SC8551_VBAT_ADC_LSB_NON_CALIBRATE		1.25
-#define SC8551_IBAT_ADC_LSB				3.125
-#define SC8551_TSBUS_ADC_LSB				1.0
-#define SC8551_TSBAT_ADC_LSB				1.0
-#define SC8551_TDIE_ADC_LSB				1.0
-
-#define SC8551_BAT_OVP_BASE				3500
-
-#define SC8551_REG_30					0x30
-
-#define SC8551_REG_31					0x31
-#define SC8551_CHARGE_MODE_MASK				0x01
-#define SC8551_CHARGE_MODE_SHIFT			0
-#define SC8551_CHARGE_MODE_DIV2				0
-#define SC8551_CHARGE_MODE_BYPASS			1
-
-#define SC8551_REG_34					0x34
-#define SC8551_ADC_OPTI_MASK				0x01
-#define SC8551_ADC_OPTI_SHIFT				0
-#define SC8551_ADC_OPTI					1
 
 #endif
