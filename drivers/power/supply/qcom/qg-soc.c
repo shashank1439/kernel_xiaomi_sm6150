@@ -439,6 +439,21 @@ static bool maint_soc_timeout(struct qpnp_qg *chip)
 	return false;
 }
 
+int qg_set_sdam_soc(struct qpnp_qg *chip, int sdam_soc)
+{
+	int rc = 0;
+
+	if (sdam_soc >= 0 && sdam_soc <= 100) {
+		chip->sdam_soc = sdam_soc;
+		chip->sdam_data[SDAM_SOC] = sdam_soc;
+		rc = qg_sdam_write(SDAM_SOC, sdam_soc);
+		if (rc < 0)
+			pr_err("Failed to update SDAM with SOC rc=%d\n", rc);
+	}
+
+	return rc;
+}
+
 static void update_msoc(struct qpnp_qg *chip)
 {
 	int rc = 0, sdam_soc, batt_temp = 0, batt_cur = 0;
@@ -477,7 +492,7 @@ static void update_msoc(struct qpnp_qg *chip)
 
 	/* update SDAM with the new MSOC */
 	sdam_soc = (chip->maint_soc > 0) ? chip->maint_soc : chip->msoc;
-	chip->sdam_data[SDAM_SOC] = sdam_soc;
+	chip->sdam_data[SDAM_SOC] = chip->sdam_soc;
 	rc = qg_sdam_write(SDAM_SOC, sdam_soc);
 	if (rc < 0)
 		pr_err("Failed to update SDAM with MSOC rc=%d\n", rc);

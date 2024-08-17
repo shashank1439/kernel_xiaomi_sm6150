@@ -10,11 +10,18 @@ config BQ2597X_CHARGE_PUMP
 	  with very high efficiency.
 
 config CHARGER_LN8000
-        tristate "LionSemi LN8000 Battery Charger"
-        depends on I2C
-        select REGMAP_I2C
+	tristate "LionSemi LN8000 Battery Charger"
+	depends on I2C
+	select REGMAP_I2C
+	help
+	  Say Y to enable support for the LN8000 charger
+
+config K9A_CHARGE
+        bool
+        prompt "K9A special modify."
+        default n
         help
-          Say Y to enable support for the LN8000 charger.
+                K9A special modify.
 
 config K9A_CHARGE
 	bool

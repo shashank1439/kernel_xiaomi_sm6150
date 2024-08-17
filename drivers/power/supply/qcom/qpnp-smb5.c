@@ -277,6 +277,68 @@ static const struct clamp_config clamp_levels[] = {
 	{ {0x11C6, 0x11F9, 0x13F1}, {0x60, 0x2B, 0x9C} },
 };
 
+/****************************
+ *    STOP/START CHARGING   *
+ ****************************/
+static ssize_t show_StopCharging_Test(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	struct power_supply *psy = dev_get_drvdata(dev);
+	struct smb_charger *chg = power_supply_get_drvdata(psy);
+	union power_supply_propval prop = {0, };
+	int rc = 0;
+	prop.intval = 1;
+
+	rc = vote(chg->usb_icl_votable, USER_VOTER, (bool)prop.intval, 0);
+	if (rc < 0) {
+		pr_err("show_StopCharging_Test Couldn't vote to %s USB rc=%d\n",
+			(bool)prop.intval ? "suspend" : "resume", rc);
+	}
+
+	rc = vote(chg->dc_suspend_votable, USER_VOTER, (bool)prop.intval, 0);
+	if (rc < 0) {
+		pr_err("show_StopCharging_Test Couldn't vote to %s DC rc=%d\n",
+			(bool)prop.intval ? "suspend" : "resume", rc);
+	}
+
+	pr_err("wt--show_StopCharging_Test\n");
+	return sprintf(buf, "chr=0\n");
+}
+
+static ssize_t store_StopCharging_Test(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+        return -1;
+}
+static DEVICE_ATTR(StopCharging_Test, 0664, show_StopCharging_Test, store_StopCharging_Test);
+
+static ssize_t show_StartCharging_Test(struct device *dev,struct device_attribute *attr, char *buf)
+{
+	struct power_supply *psy = dev_get_drvdata(dev);
+	struct smb_charger *chg = power_supply_get_drvdata(psy);
+	union power_supply_propval prop = {0, };
+	int rc = 0;
+	prop.intval = 0;
+
+	rc = vote(chg->usb_icl_votable, USER_VOTER, (bool)prop.intval, 0);
+	if (rc < 0) {
+		pr_err("show_StartCharging_Test Couldn't vote to %s USB rc=%d\n",
+			(bool)prop.intval ? "suspend" : "resume", rc);
+	}
+
+	rc = vote(chg->dc_suspend_votable, USER_VOTER, (bool)prop.intval, 0);
+	if (rc < 0) {
+		pr_err("show_StartCharging_Test Couldn't vote to %s DC rc=%d\n",
+			(bool)prop.intval ? "suspend" : "resume", rc);
+	}
+
+	pr_err("wt--show_StartCharging_Test\n");
+	return sprintf(buf, "chr=1\n");
+}
+static ssize_t store_StartCharging_Test(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+        return -1;
+}
+static DEVICE_ATTR(StartCharging_Test, 0664, show_StartCharging_Test, store_StartCharging_Test);
+
 #define PMI632_MAX_ICL_UA	3000000
 #define PM6150_MAX_FCC_UA	3000000
 static int smb5_chg_config_init(struct smb5 *chip)
@@ -944,6 +1006,10 @@ static int smb5_parse_dt(struct smb5 *chip)
 		}
 	}
 
+	chg->rara_cc2_toggle_wa = of_property_read_bool(node, "mi,rara-cc2-toggle-wa");
+
+	chg->reverse_boost_wa = of_property_read_bool(node, "mi,reverse_boost-wa");
+
 	chg->uart_en_gpio = of_get_named_gpio(node, "uart-en-gpio", 0);
 	if (!gpio_is_valid(chg->uart_en_gpio))
 		pr_err("failed to get uart_en_gpio\n");
@@ -1166,6 +1232,8 @@ static enum power_supply_property smb5_usb_props[] = {
 	POWER_SUPPLY_PROP_APSD_RERUN,
 	POWER_SUPPLY_PROP_APSD_TIMEOUT,
 	POWER_SUPPLY_PROP_APDO_MAX,
+	POWER_SUPPLY_PROP_POWER_MAX,
+	POWER_SUPPLY_PROP_PD_IN_HARD_RESET,
 };
 
 static int smb5_usb_get_prop(struct power_supply *psy,
@@ -1184,12 +1252,15 @@ static int smb5_usb_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
 		rc = smblib_get_prop_usb_online(chg, val);
-		if (!val->intval)
+		if ((!val->intval) &&
+			(!chg->pd_hard_reset && chg->pd_active == POWER_SUPPLY_PD_INACTIVE))
 			break;
 
-		if (((chg->typec_mode == POWER_SUPPLY_TYPEC_SOURCE_DEFAULT) ||
+		if ((((chg->typec_mode == POWER_SUPPLY_TYPEC_SOURCE_DEFAULT) ||
 		   (chg->connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB))
-			&& (chg->real_charger_type == POWER_SUPPLY_TYPE_USB))
+			&& (chg->real_charger_type == POWER_SUPPLY_TYPE_USB)) ||
+			(chg->typec_mode >= POWER_SUPPLY_TYPEC_SINK &&
+			chg->typec_mode <= POWER_SUPPLY_TYPEC_SINK_AUDIO_ADAPTER))
 			val->intval = 0;
 		else
 			val->intval = 1;
@@ -1414,6 +1485,9 @@ static int smb5_usb_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_APDO_MAX:
 		val->intval = chg->apdo_max;
+		break;
+	case POWER_SUPPLY_PROP_POWER_MAX:
+		val->intval = smblib_get_adapter_power_max(chg);
 		break;
 	default:
 		pr_err("get prop %d is not supported in usb\n", psp);
@@ -1720,6 +1794,7 @@ static enum power_supply_property smb5_usb_main_props[] = {
 	POWER_SUPPLY_PROP_COMP_CLAMP_LEVEL,
 	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_HOT_TEMP,
+	POWER_SUPPLY_PROP_RECHARGE_VBAT,
 };
 
 static int smb5_usb_main_get_prop(struct power_supply *psy,
@@ -1733,6 +1808,10 @@ static int smb5_usb_main_get_prop(struct power_supply *psy,
 	switch (psp) {
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
 		rc = smblib_get_charge_param(chg, &chg->param.fv, &val->intval);
+		if (val->intval == 4790000) {
+			pr_err("%s FFC charge, force display 4.48v\n", __func__);
+			val->intval = 4480000;
+		}
 		break;
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX:
 		rc = smblib_get_charge_param(chg, &chg->param.fcc,
@@ -1792,6 +1871,11 @@ static int smb5_usb_main_get_prop(struct power_supply *psy,
 	/* Use this property to report overheat status */
 	case POWER_SUPPLY_PROP_HOT_TEMP:
 		val->intval = chg->thermal_overheat;
+		break;
+	case POWER_SUPPLY_PROP_RECHARGE_VBAT:
+		val->intval = get_client_vote(chg->fv_votable,
+				BATT_PROFILE_VOTER);
+		val->intval -= 100000;
 		break;
 	default:
 		pr_debug("get prop %d is not supported in usb-main\n", psp);
@@ -1911,6 +1995,9 @@ static int smb5_usb_main_set_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_HOT_TEMP:
 		rc = smblib_set_prop_thermal_overheat(chg, val->intval);
+		break;
+	case POWER_SUPPLY_PROP_RECHARGE_VBAT:
+		rc = smblib_set_recharge_volt(chg, val->intval);
 		break;
 	default:
 		pr_err("set prop %d is not supported\n", psp);
@@ -2348,6 +2435,7 @@ static int smb5_batt_set_prop(struct power_supply *psy,
 {
 	int rc = 0;
 	struct smb_charger *chg = power_supply_get_drvdata(psy);
+	union power_supply_propval pval = {0,};
 
 	switch (prop) {
 	case POWER_SUPPLY_PROP_STATUS:
@@ -2357,9 +2445,11 @@ static int smb5_batt_set_prop(struct power_supply *psy,
 		rc = smblib_set_prop_input_suspend(chg, val);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
-		if (disable_thermal)
-			break;
-		rc = smblib_set_prop_system_temp_level(chg, val);
+		if (disable_thermal) {
+			rc = smblib_set_prop_system_temp_level(chg, &pval);
+		} else {
+			rc = smblib_set_prop_system_temp_level(chg, val);
+		}
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		rc = smblib_set_prop_batt_capacity(chg, val);
@@ -2504,6 +2594,7 @@ static int smb5_batt_prop_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_BATTERY_CHARGING_ENABLED:
 	case POWER_SUPPLY_PROP_BATTERY_CHARGING_LIMITED:
 	case POWER_SUPPLY_PROP_SLOWLY_CHARGING:
+	case POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT:
 		return 1;
 	default:
 		break;
@@ -2538,6 +2629,13 @@ static int smb5_init_batt_psy(struct smb5 *chip)
 		return PTR_ERR(chg->batt_psy);
 	}
 
+	if (device_create_file(&chg->batt_psy->dev, &dev_attr_StopCharging_Test)) {
+		pr_err("Couldn't create file: dev_attr_StopCharging_Test!\n");
+	}
+
+	if (device_create_file(&chg->batt_psy->dev, &dev_attr_StartCharging_Test)) {
+		pr_err("Couldn't create file: &dev_attr_StartCharging_Test!\n");
+	}
 	return rc;
 }
 
@@ -3552,7 +3650,7 @@ static int smb5_init_hw(struct smb5 *chip)
 	}
 
 	rc = smblib_write(chg, CHGR_FAST_CHARGE_SAFETY_TIMER_CFG_REG,
-					FAST_CHARGE_SAFETY_TIMER_768_MIN);
+					FAST_CHARGE_SAFETY_TIMER_1536_MIN);
 	if (rc < 0) {
 		dev_err(chg->dev, "Couldn't set CHGR_FAST_CHARGE_SAFETY_TIMER_CFG_REG rc=%d\n",
 			rc);
@@ -3670,6 +3768,13 @@ static int smb5_init_hw(struct smb5 *chip)
 		return rc;
 	}
 
+	rc = smblib_masked_write(chg, CHGR_FLOAT_VOLTAGE_CAL_CFG, EN_FCC_CHANGE_DURING_ESR, 0);
+	if (rc < 0) {
+		dev_err(chg->dev, "Couldn't configure CHGR_FLOAT_VOLTAGE_CAL_CFG rc=%d\n",
+				rc);
+		return rc;
+	}
+	pr_err("%s disable esr\n", __func__);
 	return rc;
 }
 
@@ -4433,6 +4538,7 @@ static int smb5_probe(struct platform_device *pdev)
 	if (chg->dcin_uusb_over_gpio_en && gpio_is_valid(chg->micro_usb_gpio))
 		smb_micro_usb_irq_handler(chg->micro_usb_irq, chg);
 
+	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_OR_9V);
 	pr_info("QPNP SMB5 probed successfully\n");
 
 	return rc;

@@ -254,6 +254,7 @@ struct qpnp_qg {
 	int			batt_age_level;
 	struct alarm		alarm_timer;
 	u32			sdam_data[SDAM_MAX];
+	int 			sdam_soc;
 
 	/* DT */
 	struct qg_dt		dt;

@@ -1,5 +1,7 @@
-obj-$(CONFIG_BQ2597X_CHARGE_PUMP)	+= bq2597x_charger.o pd_policy_manager.o cp_qc30.o
-obj-$(CONFIG_CHARGER_LN8000)	+= ln8000_charger.o pd_policy_manager.o cp_qc30.o
+obj-$(CONFIG_BQ2597X_CHARGE_PUMP)	+= bq2597x_charger.o pd_policy_manager.o cp_qc30.o bq2597x_charger_2.o
+obj-$(CONFIG_CHARGER_LN8000)		+= ln8000_charger.o pd_policy_manager.o cp_qc30.o ln8000_charger_2.o
 
 CFLAGS_REMOVE_bq2597x_charger.o += -mgeneral-regs-only
 CFLAGS_bq2597x_charger.o += -mno-implicit-float
+CFLAGS_REMOVE_bq2597x_charger_2.o += -mgeneral-regs-only
+CFLAGS_bq2597x_charger_2.o += -mno-implicit-float

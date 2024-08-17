@@ -384,6 +384,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(pd_in_hard_reset),
 	POWER_SUPPLY_ATTR(pd_current_max),
 	POWER_SUPPLY_ATTR(apdo_max),
+	POWER_SUPPLY_ATTR(power_max),
 	POWER_SUPPLY_ATTR(pd_usb_suspend_supported),
 	POWER_SUPPLY_ATTR(charger_temp),
 	POWER_SUPPLY_ATTR(charger_temp_max),
@@ -451,6 +452,15 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(skin_health),
 	POWER_SUPPLY_ATTR(apsd_rerun),
 	POWER_SUPPLY_ATTR(apsd_timeout),
+	POWER_SUPPLY_ATTR(termination_current),
+	POWER_SUPPLY_ATTR(ffc_termination_current),
+	POWER_SUPPLY_ATTR(recharge_vbat),
+	POWER_SUPPLY_ATTR(mi_battery_id),
+	POWER_SUPPLY_ATTR(bq_rsoc),
+	POWER_SUPPLY_ATTR(bq_average_current),
+	POWER_SUPPLY_ATTR(bq_true_rm),
+	POWER_SUPPLY_ATTR(bq_true_fcc),
+	POWER_SUPPLY_ATTR(chip_ok),
 	/* Charge pump properties */
 	POWER_SUPPLY_ATTR(cp_status1),
 	POWER_SUPPLY_ATTR(cp_status2),
@@ -480,9 +490,14 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(ti_charge_mode),
 	POWER_SUPPLY_ATTR(ti_bypass_mode_enable),
 	POWER_SUPPLY_ATTR(cp_vbat_calibrate),
+	POWER_SUPPLY_ATTR(cp_sec_init),
 	POWER_SUPPLY_ATTR(irq_status),
 	POWER_SUPPLY_ATTR(parallel_output_mode),
 	POWER_SUPPLY_ATTR(ffc_chg_term_current),
+	POWER_SUPPLY_ATTR(sdam_soc),
+	//Factory high temperature to intercept
+	POWER_SUPPLY_ATTR(temp_max_fac),
+	POWER_SUPPLY_ATTR(time_ot),
 #ifdef CONFIG_BATT_VERIFY_BY_DS28E16
 	/* battery verify properties */
 	POWER_SUPPLY_ATTR(romid),
