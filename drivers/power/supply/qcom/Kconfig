@@ -143,4 +143,10 @@ config SMB358_CHARGER
 	  The driver reports the charger status via the power supply framework.
 	  A charger status change triggers an IRQ via the device STAT pin.
 
+config FUEL_GAUGE_BQ27Z561
+	tristate "TI bq27z561 battery gauge driver"
+	depends on I2C
+	help
+	  Say Y to enable support for TI bq27z561 fuel gauge driver
+
 endmenu

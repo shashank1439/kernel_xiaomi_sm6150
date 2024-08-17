@@ -22,7 +22,7 @@
 //#define LN8000_DEBUG_SUPPORT
 
 /**
- * ln8000 device descripion definition
+ * ln8000 device descripion definition 
  */
 #define ASSIGNED_BITS(_end, _start) ((BIT(_end) - BIT(_start)) + BIT(_end))
 
