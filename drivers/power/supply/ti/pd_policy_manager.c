@@ -1434,9 +1434,12 @@ static void usbpd_pm_disconnect(struct usbpd_pm *pdpm)
 
 	cancel_delayed_work_sync(&pdpm->pm_work);
 
-	if (pdpm->fcc_votable)
+	if (pdpm->fcc_votable) {
 		vote(pdpm->fcc_votable, BQ_TAPER_FCC_VOTER,
 				false, 0);
+		vote(pdpm->fcc_votable, PD_UNVERIFED_VOTER,
+				false, 0);
+	}
 	pdpm->pps_supported = false;
 	pdpm->jeita_triggered = false;
 	pdpm->is_temp_out_fc2_range = false;
@@ -1481,8 +1484,20 @@ static void usbpd_pps_non_verified_contact(struct usbpd_pm *pdpm, bool connected
 
 	if (connected) {
 		usbpd_pm_evaluate_src_caps(pdpm);
-		if (pdpm->pps_supported)
+
+		if (pdpm->pps_supported) {
+			if (!pdpm->fcc_votable)
+				pdpm->fcc_votable = find_votable("FCC");
+
+			if ((pdpm->apdo_max_volt / 1000) * (pdpm->apdo_max_curr / 1000) < 33) {
+				if (pdpm->fcc_votable)
+					vote(pdpm->fcc_votable, PD_UNVERIFED_VOTER, true, PD_UNVERIFED_CURRENT_LOW);
+			} else {
+				if (pdpm->fcc_votable)
+					vote(pdpm->fcc_votable, PD_UNVERIFED_VOTER, true, PD_UNVERIFED_CURRENT_HIGH);
+			}
 			schedule_delayed_work(&pdpm->pm_work, 5*HZ);
+		}
 	} else {
 		usbpd_pm_disconnect(pdpm);
 	}
