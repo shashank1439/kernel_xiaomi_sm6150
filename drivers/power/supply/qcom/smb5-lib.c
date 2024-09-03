@@ -990,11 +990,10 @@ int smblib_set_fastcharge_mode(struct smb_charger *chg, bool enable)
 	}
 
 	if (enable) {
-		/* ffc need clear 4.4V non_fcc_vfloat_voter first */
+		/* ffc need clear 4.45V non_fcc_vfloat_voter first */
 		vote(chg->fv_votable, NON_FFC_VFLOAT_VOTER, false, 0);
-#ifdef CONFIG_K6_CHARGE
 		set_ln8000_fv(chg);
-#endif
+		vote(chg->fcc_votable, PD_UNVERIFED_VOTER, false, 0);
 		rc = power_supply_get_property(chg->bms_psy,
 				POWER_SUPPLY_PROP_FFC_CHG_TERMINATION_CURRENT, &pval);
 		if (rc < 0) {
@@ -1004,7 +1003,7 @@ int smblib_set_fastcharge_mode(struct smb_charger *chg, bool enable)
 		termi = pval.intval;
 
 	} else {
-		/* when disable fast charge mode, need set vfloat back to 4.4V */
+		/* when disable fast charge mode, need set vfloat back to 4.45V */
 		vote(chg->fv_votable, NON_FFC_VFLOAT_VOTER,
 				true, NON_FFC_VFLOAT_UV);
 		termi = chg->chg_term_current_thresh_hi_from_dts;
