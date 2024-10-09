@@ -66,7 +66,6 @@ static DEFINE_MUTEX(msm_release_lock);
 
 atomic_t resume_pending;
 wait_queue_head_t resume_wait_q;
-static struct kmem_cache *kmem_vblank_work_pool;
 
 static struct kmem_cache *kmem_vblank_work_pool;
 
