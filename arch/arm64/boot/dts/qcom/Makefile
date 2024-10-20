@@ -18,6 +18,9 @@ phoenix-sdmmagpie-overlay.dtbo-base := xiaomi-sdmmagpie.dtb
 dtbo-$(CONFIG_MACH_XIAOMI_SWEET) += sweet-sdmmagpie-overlay.dtbo
 sweet-sdmmagpie-overlay.dtbo-base := xiaomi-sdmmagpie.dtb
 
+dtbo-$(CONFIG_MACH_XIAOMI_SWEETK6A) += sweetk6a-sdmmagpie-overlay.dtbo
+sweetk6a-sdmmagpie-overlay.dtbo-base := xiaomi-sdmmagpie.dtb
+
 dtbo-$(CONFIG_MACH_XIAOMI_TOCO) += toco-sdmmagpie-overlay.dtbo
 toco-sdmmagpie-overlay.dtbo-base := xiaomi-sdmmagpie.dtb
 
