@@ -104,7 +104,6 @@ enum print_reason {
 #define BATT_VERIFY_VOTER		"BATT_VERIFY_VOTER"
 
 #define PD_VERIFED_VOTER		"PD_VERIFED_VOTER"
-#define PD_UNVERIFED_VOTER		"PD_UNVERIFED_VOTER"
 #define PD_REMOVE_COMP_VOTER		"PD_REMOVE_COMP_VOTER"
 
 /* used for bq charge pump solution */
@@ -138,7 +137,7 @@ enum print_reason {
 #define QC3P5_DP_RAPIDLY_TUNE_PULSE		10
 #define HIGH_NUM_PULSE_THR			12
 
-#define PD_UNVERIFED_CURRENT		5600000
+#define PD_UNVERIFED_CURRENT		4800000
 #ifdef CONFIG_K6_CHARGE
 #define PD_UNVERIFED_VOLTAGE		4450000
 #else
